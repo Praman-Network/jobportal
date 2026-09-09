@@ -1,0 +1,274 @@
+// app/signup/page.tsx
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase-browser";
+import type { UserRole } from "@/lib/types";
+import { CheckCircle2, Mail, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+
+export default function SignupPage() {
+  const supabase = createClient();
+  const router = useRouter();
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("student");
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleOAuth(provider: "google") {
+    setError(null);
+    setLoading(true);
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${typeof window !== "undefined" ? window.location.origin : ""}/jobs`,
+          queryParams: {
+            role: role,
+          },
+        },
+      });
+
+      if (oauthError) {
+        setError(oauthError.message);
+        setLoading(false);
+      }
+    } catch (err: any) {
+      setError(err?.message || `Failed to sign up with ${provider}`);
+      setLoading(false);
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+    setLoading(true);
+
+    // Pass user metadata so Supabase handles profile creation via database trigger
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: role,
+        },
+      },
+    });
+
+    if (signUpError || !data.user) {
+      setError(signUpError?.message || "Could not create account.");
+      setLoading(false);
+      return;
+    }
+
+    // Try upserting profile if active session exists
+    if (data.session) {
+      try {
+        await supabase.from("profiles").upsert({
+          id: data.user.id,
+          full_name: fullName,
+          role,
+        });
+      } catch (err) {
+        console.warn("Profile trigger handled insertion:", err);
+      }
+      router.push("/jobs");
+      router.refresh();
+      return;
+    }
+
+    // If email confirmation is enabled in Supabase settings
+    setSuccessMsg(
+      "Account created! If email confirmation is enabled on your Supabase project, please check your inbox to confirm your email, then log in."
+    );
+    setLoading(false);
+  }
+
+  return (
+    <div className="relative min-h-[calc(100vh-76px)] flex items-center justify-center px-6">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 50% at 50% 30%, rgba(0,240,255,0.08), transparent)",
+        }}
+      />
+      <div className="relative max-w-md w-full py-16">
+        <div className="mb-6">
+          <Image
+            src="/praman-logo.png"
+            alt="Praman"
+            width={150}
+            height={50}
+            className="h-9 sm:h-10 w-auto object-contain"
+            priority
+          />
+        </div>
+        <h1 className="font-display text-3xl font-bold mb-2">Create your account</h1>
+        <p className="text-zinc-400 text-sm mb-8">
+          Sign up as a student to browse and bookmark jobs, or a recruiter to post them.
+        </p>
+
+        {successMsg ? (
+          <div className="glass-panel p-8 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="font-display text-lg font-bold text-white">Account Created!</h3>
+            <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">{successMsg}</p>
+            <div className="pt-2">
+              <Link
+                href="/login"
+                className="btn-primary w-full inline-flex items-center justify-center gap-2"
+              >
+                Go to Login <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="glass-panel p-7 space-y-5">
+            {/* Account Role Selector */}
+            <div>
+              <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                I am a...
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole("student")}
+                  className={`py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                    role === "student"
+                      ? "border-[#00F0FF] text-[#00F0FF] bg-[#00F0FF]/10 shadow-[0_0_12px_rgba(0,240,255,0.15)]"
+                      : "border-white/10 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  🎓 Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("recruiter")}
+                  className={`py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                    role === "recruiter"
+                      ? "border-[#00F0FF] text-[#00F0FF] bg-[#00F0FF]/10 shadow-[0_0_12px_rgba(0,240,255,0.15)]"
+                      : "border-white/10 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  💼 Recruiter
+                </button>
+              </div>
+            </div>
+
+            {/* Social OAuth Buttons */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => handleOAuth("google")}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-sm font-medium transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.27 21.36 7.34 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.98 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+            </div>
+
+            {/* OR Divider */}
+            <div className="flex items-center gap-3 my-1">
+              <div className="flex-1 h-[1px] bg-white/10" />
+              <span className="font-mono-brand text-[10.5px] uppercase tracking-wider text-zinc-500">
+                OR
+              </span>
+              <div className="flex-1 h-[1px] bg-white/10" />
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="input-field"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Rohan Sharma"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  className="input-field"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  className="input-field"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {error && (
+                <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5">
+                  {error}
+                </p>
+              )}
+
+              <button type="submit" disabled={loading} className="btn-primary w-full cursor-pointer">
+                {loading ? "Creating account..." : "Sign Up"}
+              </button>
+
+              <p className="text-center text-xs text-zinc-500 pt-1">
+                Already have an account?{" "}
+                <Link href="/login" className="text-[#00F0FF] hover:underline font-medium">
+                  Log in
+                </Link>
+              </p>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

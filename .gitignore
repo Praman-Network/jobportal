@@ -1,0 +1,35 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Next.js Build Output
+/.next/
+/out/
+
+# TypeScript Build Info
+*.tsbuildinfo
+next-env.d.ts
+
+# Production & Environment Variables
+.env*.local
+.env
+!.env.example
+
+# Debug / Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS / Editor Files
+.DS_Store
+*.pem
+.vscode/
+.idea/
