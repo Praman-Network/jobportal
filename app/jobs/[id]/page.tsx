@@ -68,17 +68,18 @@ async function fetchAllJobs(): Promise<{ allJobs: JobCardData[], isLoggedIn: boo
   return { allJobs, isLoggedIn };
 }
 
-// Generate Dynamic Metadata for the Job
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> | { id: string } }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   const { allJobs } = await fetchAllJobs();
-  const job = allJobs.find(j => j.id === params.id);
+  const job = allJobs.find(j => j.id === id);
 
   if (!job) {
     // Fallback parsing for expired jobs
-    const isArbeitnow = params.id.startsWith('arbeitnow-');
-    let fallbackTitle = isArbeitnow ? params.id.replace('arbeitnow-', '').split('-').slice(0, 4).join(' ') : 'Tech Role';
+    const isArbeitnow = id.startsWith('arbeitnow-');
+    let fallbackTitle = isArbeitnow ? id.replace('arbeitnow-', '').split('-').slice(0, 4).join(' ') : 'Tech Role';
     fallbackTitle = fallbackTitle.charAt(0).toUpperCase() + fallbackTitle.slice(1);
-    const fallbackCompany = params.id.includes('gh-') ? params.id.split('-')[1] : (params.id.includes('lever-') ? params.id.split('-')[1] : 'Company');
+    const fallbackCompany = id.includes('gh-') ? id.split('-')[1] : (id.includes('lever-') ? id.split('-')[1] : 'Company');
 
     return {
       title: `${fallbackTitle} at ${fallbackCompany} | Praman Jobs`,
@@ -92,7 +93,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   };
 }
 
-export default async function JobDetailsPage({ params }: { params: { id: string } }) {
+export default async function JobDetailsPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   const { allJobs, isLoggedIn } = await fetchAllJobs();
 
   return (
@@ -144,7 +147,7 @@ export default async function JobDetailsPage({ params }: { params: { id: string 
         </div>
 
         <div id="jobs">
-          <JobCardList jobs={allJobs} isLoggedIn={isLoggedIn} initialJobId={params.id} />
+          <JobCardList jobs={allJobs} isLoggedIn={isLoggedIn} initialJobId={id} />
         </div>
       </div>
     </div>

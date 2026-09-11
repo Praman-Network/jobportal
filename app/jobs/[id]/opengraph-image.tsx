@@ -13,7 +13,9 @@ export const size = {
 };
 export const contentType = 'image/png';
 
-export default async function Image({ params }: { params: { id: string } }) {
+export default async function Image({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   // Fetch job details
   let title = "Tech Role";
   let company = "Top Company";
@@ -25,7 +27,7 @@ export default async function Image({ params }: { params: { id: string } }) {
     const { data } = await supabase
       .from("jobs")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (data) {
@@ -36,7 +38,7 @@ export default async function Image({ params }: { params: { id: string } }) {
     } else {
       // Check external jobs
       const externalJobs = await getExternalJobs();
-      const extJob = externalJobs.find(j => j.id === params.id);
+      const extJob = externalJobs.find(j => j.id === id);
       if (extJob) {
         title = extJob.title;
         company = extJob.company;
@@ -44,10 +46,10 @@ export default async function Image({ params }: { params: { id: string } }) {
         isInternship = extJob.jobType === "Internship" || title.toLowerCase().includes("intern");
       } else {
         // Fallback parsing for expired external jobs
-        const isArbeitnow = params.id.startsWith('arbeitnow-');
-        let fallbackTitle = isArbeitnow ? params.id.replace('arbeitnow-', '').split('-').slice(0, 4).join(' ') : 'Tech Role';
+        const isArbeitnow = id.startsWith('arbeitnow-');
+        let fallbackTitle = isArbeitnow ? id.replace('arbeitnow-', '').split('-').slice(0, 4).join(' ') : 'Tech Role';
         title = fallbackTitle.charAt(0).toUpperCase() + fallbackTitle.slice(1);
-        company = params.id.includes('gh-') ? params.id.split('-')[1] : (params.id.includes('lever-') ? params.id.split('-')[1] : 'Company');
+        company = id.includes('gh-') ? id.split('-')[1] : (id.includes('lever-') ? id.split('-')[1] : 'Company');
         // Capitalize company
         company = company.charAt(0).toUpperCase() + company.slice(1);
       }
