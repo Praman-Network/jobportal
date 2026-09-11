@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   title: "Praman Jobs — Internship & Job Board",
   description: "Find internships and jobs from real companies and recruiters, all in one place.",
   icons: {
-    icon: "/praman-logo.png",
-    apple: "/praman-logo.png",
+    icon: "/PramanLogo.png",
+    apple: "/PramanLogo.png",
   },
 };
 
