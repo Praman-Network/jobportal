@@ -6,15 +6,20 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import type { UserRole } from "@/lib/types";
 
 export default function LoginPage() {
   const supabase = createClient();
   const router = useRouter();
 
+  const [role, setRole] = useState<UserRole>("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleOAuth(provider: "google") {
@@ -38,7 +43,14 @@ export default function LoginPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function validateHRDomain(email: string) {
+    const publicDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com"];
+    const domain = email.split("@")[1];
+    if (!domain) return false;
+    return !publicDomains.includes(domain.toLowerCase());
+  }
+
+  async function handleStudentLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -80,6 +92,62 @@ export default function LoginPage() {
     window.location.href = "/jobs";
   }
 
+  async function handleHRLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+    
+    if (!validateHRDomain(email)) {
+      setError("Please use your company email domain. Public domains (like gmail.com) are not allowed for recruiters.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false,
+        data: {
+          role: "recruiter",
+        },
+      }
+    });
+
+    if (otpError) {
+      if (otpError.message.includes("Signups not allowed")) {
+        setError("Account not found for this email. Please sign up first.");
+      } else {
+        setError(otpError.message);
+      }
+      setLoading(false);
+      return;
+    }
+
+    setOtpSent(true);
+    setLoading(false);
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: "email",
+    });
+
+    if (verifyError) {
+      setError(verifyError.message);
+      setLoading(false);
+      return;
+    }
+
+    window.location.href = "/jobs";
+  }
+
   return (
     <div className="relative min-h-[calc(100vh-76px)] flex items-center justify-center px-6">
       <div
@@ -105,89 +173,220 @@ export default function LoginPage() {
           Browse verified India jobs & internships, or manage your postings.
         </p>
 
-        <div className="glass-panel p-7 space-y-5">
-          {/* Social OAuth Buttons */}
-          <div>
-            <button
-              type="button"
-              onClick={() => handleOAuth("google")}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-sm font-medium transition-all shadow-sm cursor-pointer disabled:opacity-50"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.27 21.36 7.34 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.98 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                />
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-          </div>
-
-          {/* OR Divider */}
-          <div className="flex items-center gap-3 my-1">
-            <div className="flex-1 h-[1px] bg-white/10" />
-            <span className="font-mono-brand text-[10.5px] uppercase tracking-wider text-zinc-500">
-              OR
-            </span>
-            <div className="flex-1 h-[1px] bg-white/10" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                className="input-field"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                className="input-field"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-
-            {error && (
-              <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5 leading-relaxed">
-                {error}
+        {otpSent ? (
+          <div className="glass-panel p-7 space-y-5">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-display text-lg font-bold text-white">Enter OTP</h3>
+              <p className="text-zinc-400 text-xs sm:text-sm mt-2">
+                We sent a secure code to <span className="text-white font-medium">{email}</span>
               </p>
-            )}
+            </div>
+            
+            <form onSubmit={handleVerifyOtp} className="space-y-4 pt-2">
+              <div>
+                <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                  OTP Code
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="input-field text-center tracking-[0.5em] font-mono font-bold text-lg"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.trim())}
+                  placeholder="••••••••"
+                  maxLength={8}
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full inline-flex items-center justify-center gap-2"
-            >
-              {loading ? "Logging in..." : "Log In"}
-              {!loading && <ArrowRight className="w-4 h-4" />}
-            </button>
+              {error && (
+                <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5 leading-relaxed">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || otp.length < 6}
+                className="btn-primary w-full inline-flex items-center justify-center gap-2"
+              >
+                {loading ? "Verifying..." : "Verify & Log In"}
+                {!loading && <ArrowRight className="w-4 h-4" />}
+              </button>
+              
+              <button 
+                type="button" 
+                onClick={() => setOtpSent(false)} 
+                className="w-full text-center text-xs text-zinc-500 hover:text-white pt-2"
+              >
+                Use a different email
+              </button>
+            </form>
+          </div>
+        ) : successMsg ? (
+          <div className="glass-panel p-8 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="font-display text-lg font-bold text-white">Check your email</h3>
+            <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">{successMsg}</p>
+          </div>
+        ) : (
+          <div className="glass-panel p-7 space-y-5">
+            <div>
+              <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                I am a...
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole("student")}
+                  className={`py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                    role === "student"
+                      ? "border-[#00F0FF] text-[#00F0FF] bg-[#00F0FF]/10 shadow-[0_0_12px_rgba(0,240,255,0.15)]"
+                      : "border-white/10 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  🎓 Candidate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("recruiter")}
+                  className={`py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                    role === "recruiter"
+                      ? "border-[#00F0FF] text-[#00F0FF] bg-[#00F0FF]/10 shadow-[0_0_12px_rgba(0,240,255,0.15)]"
+                      : "border-white/10 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  💼 HR / Recruiter
+                </button>
+              </div>
+            </div>
+
+            {role === "student" ? (
+              <>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => handleOAuth("google")}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-sm font-medium transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.27 21.36 7.34 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.98 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                    <span>Continue with Google</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 my-1">
+                  <div className="flex-1 h-[1px] bg-white/10" />
+                  <span className="font-mono-brand text-[10.5px] uppercase tracking-wider text-zinc-500">
+                    OR
+                  </span>
+                  <div className="flex-1 h-[1px] bg-white/10" />
+                </div>
+
+                <form onSubmit={handleStudentLogin} className="space-y-4">
+                  <div>
+                    <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      className="input-field"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center justify-between font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                      <span>Password</span>
+                      <Link href="/forgot-password" className="text-[#00F0FF] hover:underline normal-case tracking-normal">
+                        Forgot Password?
+                      </Link>
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      className="input-field"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+
+                  {error && (
+                    <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5 leading-relaxed">
+                      {error}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn-primary w-full inline-flex items-center justify-center gap-2"
+                  >
+                    {loading ? "Logging in..." : "Log In"}
+                    {!loading && <ArrowRight className="w-4 h-4" />}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <form onSubmit={handleHRLogin} className="space-y-4 pt-2">
+                <p className="text-xs text-zinc-400 pb-2">
+                  HR login is strictly restricted to company domains.
+                </p>
+                <div>
+                  <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                    Company Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    className="input-field"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="hr@yourcompany.com"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5 leading-relaxed">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full inline-flex items-center justify-center gap-2"
+                >
+                  {loading ? "Sending OTP..." : "Send OTP to Email"}
+                  {!loading && <ArrowRight className="w-4 h-4" />}
+                </button>
+              </form>
+            )}
 
             <p className="text-center text-xs text-zinc-500 pt-1">
               Don&apos;t have an account?{" "}
@@ -195,8 +394,8 @@ export default function LoginPage() {
                 Sign up
               </Link>
             </p>
-          </form>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
