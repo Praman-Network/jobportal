@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from "react";
 import JobCard from "@/components/JobCard";
+import JobDetailsModal from "@/components/JobDetailsModal";
 import type { JobCardData } from "@/lib/types";
 import { Search, MapPin, X } from "lucide-react";
 
@@ -15,6 +16,9 @@ export default function JobCardList({ jobs, isLoggedIn = false }: JobCardListPro
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
+  const [selectedJob, setSelectedJob] = useState<JobCardData | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const jobsPerPage = 10;
 
   const CITIES = [
     { label: "All Locations", value: "All" },
@@ -82,7 +86,19 @@ export default function JobCardList({ jobs, isLoggedIn = false }: JobCardListPro
     setSearchQuery("");
     setSelectedCity("All");
     setSelectedType("All");
+    setCurrentPage(1);
   }
+
+  // Reset page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCity, selectedType]);
+
+  const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
+  const currentJobs = filteredJobs.slice(
+    (currentPage - 1) * jobsPerPage,
+    currentPage * jobsPerPage
+  );
 
   return (
     <div className="space-y-6">
@@ -188,11 +204,60 @@ export default function JobCardList({ jobs, isLoggedIn = false }: JobCardListPro
           </button>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {filteredJobs.map((job, i) => (
-            <JobCard key={`${job.id}-${i}`} job={job} index={i} isLoggedIn={isLoggedIn} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4">
+            {currentJobs.map((job, i) => (
+              <JobCard 
+                key={`${job.id}-${i}`} 
+                job={job} 
+                index={i} 
+                isLoggedIn={isLoggedIn} 
+                onClick={() => setSelectedJob(job)}
+              />
+            ))}
+          </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-8 pb-4">
+              <button
+                onClick={() => {
+                  setCurrentPage(p => Math.max(1, p - 1));
+                  window.scrollTo({ top: document.getElementById('jobs')?.offsetTop || 0, behavior: 'smooth' });
+                }}
+                disabled={currentPage === 1}
+                className="px-4 py-2 rounded-lg font-mono-brand text-xs tracking-wider uppercase bg-white/[0.03] border border-white/10 text-zinc-400 hover:text-white hover:border-[#00F0FF]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-1.5 font-mono-brand text-xs text-zinc-400 mx-2">
+                <span className="text-[#00F0FF] font-bold">{currentPage}</span>
+                <span className="text-zinc-600">/</span>
+                <span>{totalPages}</span>
+              </div>
+              
+              <button
+                onClick={() => {
+                  setCurrentPage(p => Math.min(totalPages, p + 1));
+                  window.scrollTo({ top: document.getElementById('jobs')?.offsetTop || 0, behavior: 'smooth' });
+                }}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 rounded-lg font-mono-brand text-xs tracking-wider uppercase bg-white/[0.03] border border-white/10 text-zinc-400 hover:text-white hover:border-[#00F0FF]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {selectedJob && (
+        <JobDetailsModal
+          job={selectedJob}
+          isLoggedIn={isLoggedIn}
+          onClose={() => setSelectedJob(null)}
+        />
       )}
     </div>
   );

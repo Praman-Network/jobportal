@@ -68,87 +68,56 @@ export default async function JobsPage() {
   const allJobs = [...internalJobs, ...externalJobCards];
 
   return (
-    <div className="relative min-h-screen bg-[#06060c] text-white">
-      {/* Ambient background glow */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[560px] pointer-events-none"
+    <div className="relative min-h-screen bg-[#07080a] text-white overflow-hidden">
+      {/* Sleek Grid & Ambient Background */}
+      <div 
+        className="absolute inset-0 z-0 pointer-events-none opacity-[0.15]"
         style={{
-          background:
-            "radial-gradient(ellipse 75% 55% at 50% -10%, rgba(0,240,255,0.12), rgba(120,50,255,0.04) 60%, transparent 80%)",
+          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+          backgroundPosition: 'center center'
+        }}
+      />
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none z-0"
+        style={{
+          background: "radial-gradient(circle, rgba(0,240,255,0.08) 0%, transparent 60%)",
         }}
       />
 
-      <div className="relative max-w-6xl mx-auto px-6 pt-12 pb-24">
-        {/* Top Hero Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 items-start">
-          {/* Hero copy */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#00F0FF]/30 bg-[#00F0FF]/10 text-xs tracking-wider uppercase font-semibold text-[#00F0FF] font-mono-brand shadow-[0_0_15px_rgba(0,240,255,0.15)]">
-              <span className="w-2 h-2 rounded-full bg-[#00F0FF] shadow-[0_0_8px_#00F0FF] animate-pulse" />
-              🇮🇳 India Tech & Internship Board
-            </div>
-
-            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.15]">
-              Find top <span className="text-[#00F0FF]">internships & jobs</span> in India,
-              <br className="hidden sm:block" /> with zero dead links.
-            </h1>
-
-            <p className="text-zinc-400 text-sm sm:text-[15px] max-w-xl leading-relaxed">
-              Curated opportunities across Bangalore, Gurgaon, Mumbai, Hyderabad, Pune, and India-Remote.
-              Every listing connects directly to official company career pages.
-            </p>
-
-            {/* Quick city badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-zinc-400">
-              <span className="font-mono-brand text-zinc-500 text-[11px] uppercase tracking-wider">Top Hubs:</span>
-              <span className="px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/10 text-zinc-300">📍 Bangalore</span>
-              <span className="px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/10 text-zinc-300">📍 Delhi NCR / Gurgaon</span>
-              <span className="px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/10 text-zinc-300">📍 Mumbai</span>
-              <span className="px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/10 text-zinc-300">📍 Hyderabad</span>
-              <span className="px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/10 text-zinc-300">📍 Pune</span>
-            </div>
+      <div className="relative z-10 max-w-6xl mx-auto px-6 pt-20 pb-24">
+        {/* Top Hero Section - Sleek & Centered */}
+        <div className="flex flex-col items-start justify-center max-w-3xl mb-16 space-y-6">
+          {/* Sleek Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#00F0FF]/20 bg-[#00F0FF]/[0.03] text-[10px] tracking-widest uppercase font-mono-brand text-[#00F0FF]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF]" />
+            INDIA TECH & INTERNSHIP BOARD IS LIVE
           </div>
 
-          {/* Unified Clean Coverage Metrics Panel */}
-          <div className="rounded-2xl border border-white/10 bg-[#0b0c16]/90 backdrop-blur-xl p-5 shadow-xl">
-            <div className="flex items-center justify-between font-mono-brand text-[10.5px] uppercase tracking-widest text-zinc-400 mb-4 pb-3 border-b border-white/5">
-              <span>Platform Status</span>
-              <span className="text-emerald-400 flex items-center gap-1 font-bold">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Live & Verified
-              </span>
-            </div>
+          {/* Bold Minimal Heading */}
+          <h1 className="font-display text-5xl sm:text-6xl lg:text-[72px] font-bold text-white tracking-tight leading-[1.05]">
+            Find top talent with <span className="text-[#00F0FF] drop-shadow-[0_0_20px_rgba(0,240,255,0.3)]">Zero Dead Links</span>
+          </h1>
 
-            <div className="space-y-3.5">
-              <div className="flex items-center justify-between text-xs sm:text-[13px]">
-                <span className="text-zinc-400 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF]" /> Active Indian Tech Roles
-                </span>
-                <span className="font-mono-brand text-[#00F0FF] font-bold">
-                  {allJobs.length} Positions
-                </span>
-              </div>
+          {/* Subtitle */}
+          <p className="text-zinc-400 text-base sm:text-lg max-w-xl leading-relaxed font-light">
+            Curated opportunities across Bangalore, Gurgaon, Mumbai, Hyderabad, Pune, and India-Remote. Every listing connects directly to official company career pages.
+          </p>
 
-              <div className="flex items-center justify-between text-xs sm:text-[13px]">
-                <span className="text-zinc-400 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> Direct Career Portals
-                </span>
-                <span className="font-mono-brand text-purple-300 font-bold">
-                  100% Direct Apply
-                </span>
-              </div>
-
-              <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                <span className="text-zinc-500">Redirect Policy</span>
-                <span className="font-mono-brand text-zinc-300 text-[11px] bg-white/5 px-2 py-0.5 rounded border border-white/10">
-                  Direct to Employer ↗
-                </span>
-              </div>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-4 pt-4">
+            <a href="#jobs" className="px-8 py-3.5 rounded-full bg-[#00F0FF] text-[#001014] font-display font-bold text-sm tracking-widest uppercase hover:bg-white transition-colors shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+              Browse Jobs
+            </a>
+            <a href="/post-job" className="px-8 py-3.5 rounded-full bg-transparent border border-white/20 text-white font-display font-bold text-sm tracking-widest uppercase hover:bg-white/5 transition-colors">
+              Hire Talent
+            </a>
           </div>
         </div>
 
-        {/* Job Listings with interactive search & city filters */}
-        <JobCardList jobs={allJobs} isLoggedIn={isLoggedIn} />
+        <div id="jobs">
+          <JobCardList jobs={allJobs} isLoggedIn={isLoggedIn} />
+        </div>
       </div>
     </div>
   );
