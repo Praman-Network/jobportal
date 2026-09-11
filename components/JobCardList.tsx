@@ -1,7 +1,7 @@
 // components/JobCardList.tsx
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import JobCard from "@/components/JobCard";
 import JobDetailsModal from "@/components/JobDetailsModal";
 import type { JobCardData } from "@/lib/types";
@@ -20,10 +20,12 @@ export default function JobCardList({ jobs, isLoggedIn = false, initialJobId }: 
   const [selectedJob, setSelectedJob] = useState<JobCardData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const jobsPerPage = 10;
+  const hasOpenedInitial = useRef(false);
 
   // Set initial selected job if provided in URL
   useEffect(() => {
-    if (initialJobId && !selectedJob) {
+    if (initialJobId && !hasOpenedInitial.current) {
+      hasOpenedInitial.current = true;
       const found = jobs.find(j => j.id === initialJobId);
       if (found) {
         setSelectedJob(found);
@@ -45,7 +47,7 @@ export default function JobCardList({ jobs, isLoggedIn = false, initialJobId }: 
         });
       }
     }
-  }, [initialJobId, jobs, selectedJob]);
+  }, [initialJobId, jobs]);
 
   const CITIES = [
     { label: "All Locations", value: "All" },
