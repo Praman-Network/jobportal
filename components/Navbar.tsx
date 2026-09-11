@@ -81,7 +81,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#06060c]/80 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[76px] flex items-center justify-between">
         {/* Brand Logo - Enlarged & Crisp */}
-        <Link href="/jobs" className="flex items-center group py-1 shrink-0">
+        <Link href="/" className="flex items-center group py-1 shrink-0">
           <Image
             src="/praman-logo.png"
             alt="Praman"
