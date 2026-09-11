@@ -42,6 +42,14 @@ export default async function Image({ params }: { params: { id: string } }) {
         company = extJob.company;
         location = extJob.location;
         isInternship = extJob.jobType === "Internship" || title.toLowerCase().includes("intern");
+      } else {
+        // Fallback parsing for expired external jobs
+        const isArbeitnow = params.id.startsWith('arbeitnow-');
+        let fallbackTitle = isArbeitnow ? params.id.replace('arbeitnow-', '').split('-').slice(0, 4).join(' ') : 'Tech Role';
+        title = fallbackTitle.charAt(0).toUpperCase() + fallbackTitle.slice(1);
+        company = params.id.includes('gh-') ? params.id.split('-')[1] : (params.id.includes('lever-') ? params.id.split('-')[1] : 'Company');
+        // Capitalize company
+        company = company.charAt(0).toUpperCase() + company.slice(1);
       }
     }
   } catch (err) {
