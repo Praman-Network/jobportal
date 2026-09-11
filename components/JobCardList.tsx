@@ -1,7 +1,7 @@
 // components/JobCardList.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import JobCard from "@/components/JobCard";
 import JobDetailsModal from "@/components/JobDetailsModal";
 import type { JobCardData } from "@/lib/types";
