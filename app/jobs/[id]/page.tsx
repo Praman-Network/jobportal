@@ -74,9 +74,15 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const job = allJobs.find(j => j.id === params.id);
 
   if (!job) {
+    // Fallback parsing for expired jobs
+    const isArbeitnow = params.id.startsWith('arbeitnow-');
+    let fallbackTitle = isArbeitnow ? params.id.replace('arbeitnow-', '').split('-').slice(0, 4).join(' ') : 'Tech Role';
+    fallbackTitle = fallbackTitle.charAt(0).toUpperCase() + fallbackTitle.slice(1);
+    const fallbackCompany = params.id.includes('gh-') ? params.id.split('-')[1] : (params.id.includes('lever-') ? params.id.split('-')[1] : 'Company');
+
     return {
-      title: "Job Not Found | Praman Jobs",
-      description: "The job you are looking for does not exist or has been removed."
+      title: `${fallbackTitle} at ${fallbackCompany} | Praman Jobs`,
+      description: "This job may have expired from our live feed, but you can explore more opportunities at Praman Jobs."
     };
   }
 

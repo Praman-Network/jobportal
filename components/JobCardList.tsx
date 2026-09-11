@@ -1,7 +1,7 @@
 // components/JobCardList.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import JobCard from "@/components/JobCard";
 import JobDetailsModal from "@/components/JobDetailsModal";
 import type { JobCardData } from "@/lib/types";
@@ -22,14 +22,30 @@ export default function JobCardList({ jobs, isLoggedIn = false, initialJobId }: 
   const jobsPerPage = 10;
 
   // Set initial selected job if provided in URL
-  useMemo(() => {
+  useEffect(() => {
     if (initialJobId && !selectedJob) {
       const found = jobs.find(j => j.id === initialJobId);
       if (found) {
         setSelectedJob(found);
+      } else {
+        // If the job fell off the live feed, we create a fallback job to at least show something
+        const isArbeitnow = initialJobId.startsWith('arbeitnow-');
+        const fallbackTitle = isArbeitnow ? initialJobId.replace('arbeitnow-', '').split('-').slice(0, 4).join(' ') : 'Tech Role';
+        
+        setSelectedJob({
+          id: initialJobId,
+          title: fallbackTitle.charAt(0).toUpperCase() + fallbackTitle.slice(1),
+          company: initialJobId.includes('gh-') ? initialJobId.split('-')[1] : (initialJobId.includes('lever-') ? initialJobId.split('-')[1] : 'Company'),
+          location: 'India / Remote',
+          tags: ['Expired or Unlisted'],
+          applyUrl: 'https://pramanjobs.com',
+          postedAt: new Date().toISOString(),
+          origin: 'external',
+          description: 'This job is no longer available in our live feed. It may have expired or been filled.',
+        });
       }
     }
-  }, [initialJobId, jobs]);
+  }, [initialJobId, jobs, selectedJob]);
 
   const CITIES = [
     { label: "All Locations", value: "All" },
