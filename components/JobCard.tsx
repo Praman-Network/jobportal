@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, MapPin, Building2, Banknote, Clock, Sparkles } from "lucide-react";
 import type { JobCardData } from "@/lib/types";
 
-export default function JobCard({ job, index }: { job: JobCardData; index: number }) {
+export default function JobCard({ job, index, isLoggedIn = false }: { job: JobCardData; index: number; isLoggedIn?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -122,14 +122,23 @@ export default function JobCard({ job, index }: { job: JobCardData; index: numbe
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Actively Hiring
           </span>
         )}
-        <a
-          href={job.applyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 font-display font-bold text-xs uppercase tracking-wider bg-[#00F0FF] hover:bg-[#33f3ff] text-[#001014] px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(0,240,255,0.2)] hover:shadow-[0_0_25px_rgba(0,240,255,0.4)] transition-all transform hover:-translate-y-0.5"
-        >
-          Apply on Company Site <ArrowUpRight className="w-3.5 h-3.5" />
-        </a>
+        {isLoggedIn ? (
+          <a
+            href={job.applyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 font-display font-bold text-xs uppercase tracking-wider bg-[#00F0FF] hover:bg-[#33f3ff] text-[#001014] px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(0,240,255,0.2)] hover:shadow-[0_0_25px_rgba(0,240,255,0.4)] transition-all transform hover:-translate-y-0.5"
+          >
+            Apply on Company Site <ArrowUpRight className="w-3.5 h-3.5" />
+          </a>
+        ) : (
+          <a
+            href="/login"
+            className="inline-flex items-center gap-1.5 font-display font-bold text-xs uppercase tracking-wider bg-[#00F0FF] hover:bg-[#33f3ff] text-[#001014] px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(0,240,255,0.2)] hover:shadow-[0_0_25px_rgba(0,240,255,0.4)] transition-all transform hover:-translate-y-0.5"
+          >
+            Apply Now <ArrowUpRight className="w-3.5 h-3.5" />
+          </a>
+        )}
       </div>
     </motion.div>
   );

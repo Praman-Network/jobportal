@@ -9,9 +9,15 @@ export const dynamic = "force-dynamic";
 
 export default async function JobsPage() {
   let internalJobsRaw: InternalJob[] = [];
+  let isLoggedIn = false;
 
   try {
     const supabase = await createClient();
+    
+    // Check auth status
+    const { data: authData } = await supabase.auth.getUser();
+    isLoggedIn = !!authData?.user;
+
     const { data } = await supabase
       .from("jobs")
       .select("*")
@@ -142,7 +148,7 @@ export default async function JobsPage() {
         </div>
 
         {/* Job Listings with interactive search & city filters */}
-        <JobCardList jobs={allJobs} />
+        <JobCardList jobs={allJobs} isLoggedIn={isLoggedIn} />
       </div>
     </div>
   );

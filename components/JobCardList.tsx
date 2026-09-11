@@ -8,9 +8,10 @@ import { Search, MapPin, X } from "lucide-react";
 
 interface JobCardListProps {
   jobs: JobCardData[];
+  isLoggedIn?: boolean;
 }
 
-export default function JobCardList({ jobs }: JobCardListProps) {
+export default function JobCardList({ jobs, isLoggedIn = false }: JobCardListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
@@ -99,8 +100,8 @@ export default function JobCardList({ jobs }: JobCardListProps) {
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white p-1"
+               onClick={() => setSearchQuery("")}
+               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white p-1"
             >
               <X className="w-4 h-4" />
             </button>
@@ -189,7 +190,7 @@ export default function JobCardList({ jobs }: JobCardListProps) {
       ) : (
         <div className="grid gap-4">
           {filteredJobs.map((job, i) => (
-            <JobCard key={`${job.id}-${i}`} job={job} index={i} />
+            <JobCard key={`${job.id}-${i}`} job={job} index={i} isLoggedIn={isLoggedIn} />
           ))}
         </div>
       )}

@@ -14,8 +14,11 @@ export default function SignupPage() {
   const router = useRouter();
 
   const [fullName, setFullName] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [role, setRole] = useState<UserRole>("student");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -45,7 +48,14 @@ export default function SignupPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function validateHRDomain(email: string) {
+    const publicDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com"];
+    const domain = email.split("@")[1];
+    if (!domain) return false;
+    return !publicDomains.includes(domain.toLowerCase());
+  }
+
+  async function handleStudentSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
@@ -58,7 +68,7 @@ export default function SignupPage() {
       options: {
         data: {
           full_name: fullName,
-          role: role,
+          role: "student",
         },
       },
     });
@@ -75,7 +85,7 @@ export default function SignupPage() {
         await supabase.from("profiles").upsert({
           id: data.user.id,
           full_name: fullName,
-          role,
+          role: "student",
         });
       } catch (err) {
         console.warn("Profile trigger handled insertion:", err);
@@ -90,6 +100,60 @@ export default function SignupPage() {
       "Account created! If email confirmation is enabled on your Supabase project, please check your inbox to confirm your email, then log in."
     );
     setLoading(false);
+  }
+
+  async function handleHRSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+    
+    if (!validateHRDomain(email)) {
+      setError("Please use your company email domain. Public domains (like gmail.com) are not allowed for recruiters.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        data: {
+          full_name: fullName,
+          company_name: companyName,
+          role: "recruiter",
+        },
+      }
+    });
+
+    if (otpError) {
+      setError(otpError.message);
+      setLoading(false);
+      return;
+    }
+
+    setOtpSent(true);
+    setLoading(false);
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: "email",
+    });
+
+    if (verifyError) {
+      setError(verifyError.message);
+      setLoading(false);
+      return;
+    }
+
+    router.push("/jobs");
+    router.refresh();
   }
 
   return (
@@ -117,7 +181,59 @@ export default function SignupPage() {
           Sign up as a student to browse and bookmark jobs, or a recruiter to post them.
         </p>
 
-        {successMsg ? (
+        {otpSent ? (
+          <div className="glass-panel p-7 space-y-5">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-display text-lg font-bold text-white">Enter OTP</h3>
+              <p className="text-zinc-400 text-xs sm:text-sm mt-2">
+                We sent a secure code to <span className="text-white font-medium">{email}</span>
+              </p>
+            </div>
+            
+            <form onSubmit={handleVerifyOtp} className="space-y-4 pt-2">
+              <div>
+                <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                  OTP Code
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="input-field text-center tracking-[0.5em] font-mono font-bold text-lg"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.trim())}
+                  placeholder="••••••••"
+                  maxLength={8}
+                />
+              </div>
+
+              {error && (
+                <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5 leading-relaxed">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || otp.length < 6}
+                className="btn-primary w-full inline-flex items-center justify-center gap-2"
+              >
+                {loading ? "Verifying..." : "Verify & Sign Up"}
+                {!loading && <ArrowRight className="w-4 h-4" />}
+              </button>
+              
+              <button 
+                type="button" 
+                onClick={() => setOtpSent(false)} 
+                className="w-full text-center text-xs text-zinc-500 hover:text-white pt-2"
+              >
+                Use a different email
+              </button>
+            </form>
+          </div>
+        ) : successMsg ? (
           <div className="glass-panel p-8 text-center space-y-4">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-6 h-6" />
@@ -166,106 +282,165 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Social OAuth Buttons */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => handleOAuth("google")}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-sm font-medium transition-all shadow-sm cursor-pointer disabled:opacity-50"
-              >
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.27 21.36 7.34 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.98 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                  />
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-            </div>
+            {role === "student" ? (
+              <>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleOAuth("google")}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-sm font-medium transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.27 21.36 7.34 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.98 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.27 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                    <span>Continue with Google</span>
+                  </button>
+                </div>
 
-            {/* OR Divider */}
-            <div className="flex items-center gap-3 my-1">
-              <div className="flex-1 h-[1px] bg-white/10" />
-              <span className="font-mono-brand text-[10.5px] uppercase tracking-wider text-zinc-500">
-                OR
-              </span>
-              <div className="flex-1 h-[1px] bg-white/10" />
-            </div>
+                <div className="flex items-center gap-3 my-1">
+                  <div className="flex-1 h-[1px] bg-white/10" />
+                  <span className="font-mono-brand text-[10.5px] uppercase tracking-wider text-zinc-500">
+                    OR
+                  </span>
+                  <div className="flex-1 h-[1px] bg-white/10" />
+                </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="input-field"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Rohan Sharma"
-                />
-              </div>
+                <form onSubmit={handleStudentSubmit} className="space-y-4">
+                  <div>
+                    <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="input-field"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="e.g. Rohan Sharma"
+                    />
+                  </div>
 
-              <div>
-                <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  required
-                  className="input-field"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
+                  <div>
+                    <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      className="input-field"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                    />
+                  </div>
 
-              <div>
-                <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  className="input-field"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
+                  <div>
+                    <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      className="input-field"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
 
-              {error && (
-                <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5">
-                  {error}
+                  {error && (
+                    <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5">
+                      {error}
+                    </p>
+                  )}
+
+                  <button type="submit" disabled={loading} className="btn-primary w-full cursor-pointer">
+                    {loading ? "Creating account..." : "Sign Up"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <form onSubmit={handleHRSubmit} className="space-y-4 pt-2">
+                <p className="text-xs text-zinc-400 pb-2">
+                  HR signup is strictly restricted to company domains.
                 </p>
-              )}
+                <div>
+                  <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="input-field"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Priya HR"
+                  />
+                </div>
 
-              <button type="submit" disabled={loading} className="btn-primary w-full cursor-pointer">
-                {loading ? "Creating account..." : "Sign Up"}
-              </button>
+                <div>
+                  <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="input-field"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="e.g. Acme Corp"
+                  />
+                </div>
 
-              <p className="text-center text-xs text-zinc-500 pt-1">
-                Already have an account?{" "}
-                <Link href="/login" className="text-[#00F0FF] hover:underline font-medium">
-                  Log in
-                </Link>
-              </p>
-            </form>
+                <div>
+                  <label className="block font-mono-brand text-[10.5px] uppercase tracking-wide text-zinc-400 mb-2">
+                    Company Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    className="input-field"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="hr@yourcompany.com"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-xs sm:text-sm text-rose-400 bg-rose-500/10 border border-rose-500/25 rounded-xl px-3.5 py-2.5">
+                    {error}
+                  </p>
+                )}
+
+                <button type="submit" disabled={loading} className="btn-primary w-full cursor-pointer">
+                  {loading ? "Sending OTP..." : "Send OTP to Email"}
+                </button>
+              </form>
+            )}
+
+            <p className="text-center text-xs text-zinc-500 pt-1">
+              Already have an account?{" "}
+              <Link href="/login" className="text-[#00F0FF] hover:underline font-medium">
+                Log in
+              </Link>
+            </p>
           </div>
         )}
       </div>
