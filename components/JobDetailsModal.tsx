@@ -1,8 +1,8 @@
 // components/JobDetailsModal.tsx
 "use client";
 
-import { useEffect, useRef } from "react";
-import { X, Building2, MapPin, Banknote, Clock, ArrowUpRight, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Building2, MapPin, Banknote, Clock, ArrowUpRight, Sparkles, Share2, CheckCircle2 } from "lucide-react";
 import type { JobCardData } from "@/lib/types";
 
 interface JobDetailsModalProps {
@@ -13,6 +13,32 @@ interface JobDetailsModalProps {
 
 export default function JobDetailsModal({ job, isLoggedIn, onClose }: JobDetailsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const shareText = `Check out this ${job.title} role at ${job.company} on Praman Jobs!`;
+    const shareUrl = window.location.href; // We can use the current jobs page URL
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${job.title} at ${job.company}`,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (err) {
+        console.warn("Error sharing:", err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.warn("Failed to copy:", err);
+      }
+    }
+  };
 
   // Close on Escape key
   useEffect(() => {
@@ -162,7 +188,14 @@ export default function JobDetailsModal({ job, isLoggedIn, onClose }: JobDetails
             Posted {postedLabel}
           </div>
           
-          <div className="w-full sm:w-auto">
+          <div className="w-full sm:w-auto flex items-center gap-3">
+            <button
+              onClick={handleShare}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-display font-bold text-sm tracking-widest bg-white/[0.05] border border-white/10 hover:bg-white/10 text-white px-6 py-3.5 rounded-xl transition-all"
+            >
+              {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+              {copied ? "COPIED" : "SHARE"}
+            </button>
             {isLoggedIn ? (
               <a
                 href={job.applyUrl}
