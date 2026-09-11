@@ -17,7 +17,7 @@ export default function JobDetailsModal({ job, isLoggedIn, onClose }: JobDetails
 
   const handleShare = async () => {
     const shareText = `Check out this ${job.title} role at ${job.company} on Praman Jobs!`;
-    const shareUrl = window.location.href; // We can use the current jobs page URL
+    const shareUrl = `${window.location.origin}/jobs/${job.id}`;
 
     if (navigator.share) {
       try {

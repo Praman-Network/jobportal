@@ -10,15 +10,26 @@ import { Search, MapPin, X } from "lucide-react";
 interface JobCardListProps {
   jobs: JobCardData[];
   isLoggedIn?: boolean;
+  initialJobId?: string;
 }
 
-export default function JobCardList({ jobs, isLoggedIn = false }: JobCardListProps) {
+export default function JobCardList({ jobs, isLoggedIn = false, initialJobId }: JobCardListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
   const [selectedJob, setSelectedJob] = useState<JobCardData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const jobsPerPage = 10;
+
+  // Set initial selected job if provided in URL
+  useMemo(() => {
+    if (initialJobId && !selectedJob) {
+      const found = jobs.find(j => j.id === initialJobId);
+      if (found) {
+        setSelectedJob(found);
+      }
+    }
+  }, [initialJobId, jobs]);
 
   const CITIES = [
     { label: "All Locations", value: "All" },
