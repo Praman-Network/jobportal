@@ -1,4 +1,6 @@
 // components/Footer.tsx
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 // Custom SVGs for brand icons
@@ -102,16 +104,29 @@ export default function Footer() {
             <h4 className="font-mono-brand text-xs uppercase tracking-widest text-zinc-300">Platform</h4>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link href="/jobs" className="text-zinc-500 hover:text-[#00F0FF] transition-colors">Browse Jobs</Link>
+                <Link 
+                  href="/jobs#jobs" 
+                  onClick={(e) => {
+                    if (window.location.pathname === "/jobs" || window.location.pathname === "/") {
+                      e.preventDefault();
+                      const jobsSection = document.getElementById("jobs");
+                      if (jobsSection) {
+                        jobsSection.scrollIntoView({ behavior: "smooth" });
+                      } else {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    }
+                  }}
+                  className="text-zinc-500 hover:text-[#00F0FF] transition-colors"
+                >
+                  Browse Jobs
+                </Link>
               </li>
               <li>
                 <Link href="/post-job" className="text-zinc-500 hover:text-[#00F0FF] transition-colors">Hire Talent</Link>
               </li>
               <li>
-                <a href="#" className="text-zinc-500 hover:text-[#00F0FF] transition-colors">Protocol V2</a>
-              </li>
-              <li>
-                <a href="#" className="text-zinc-500 hover:text-[#00F0FF] transition-colors">Pricing</a>
+                <a href="https://docs.praman.network/" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-[#00F0FF] transition-colors">Documentation</a>
               </li>
             </ul>
           </div>
@@ -121,16 +136,13 @@ export default function Footer() {
             <h4 className="font-mono-brand text-xs uppercase tracking-widest text-zinc-300">Company</h4>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <a href="#" className="text-zinc-500 hover:text-white transition-colors">About Us</a>
+                <a href="https://www.praman.network/contact" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors">Contact Us</a>
               </li>
               <li>
-                <a href="#" className="text-zinc-500 hover:text-white transition-colors">Blog</a>
+                <a href="https://www.praman.network/privacy" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors">Privacy Policy</a>
               </li>
               <li>
-                <a href="#" className="text-zinc-500 hover:text-white transition-colors">Privacy Policy</a>
-              </li>
-              <li>
-                <a href="#" className="text-zinc-500 hover:text-white transition-colors">Terms of Service</a>
+                <a href="https://www.praman.network/terms" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors">Terms of Use</a>
               </li>
             </ul>
           </div>
